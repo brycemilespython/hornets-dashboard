@@ -105,6 +105,19 @@ interface ComparisonData {
 }
 
 export default function Dashboard() {
+  // Check for API key at the start
+  if (!process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY) {
+    console.error('Ball Don\'t Lie API key is not set');
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h2>
+          <p className="text-gray-700">The application is not properly configured. Please contact the administrator.</p>
+        </div>
+      </div>
+    );
+  }
+
   const { user, error: authError, isLoading: authLoading } = useUser();
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -180,11 +193,18 @@ export default function Dashboard() {
       try {
         console.log('Starting API requests...');
         
+        if (!process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY) {
+          throw new Error('Ball Don\'t Lie API key is not configured');
+        }
+        
         // First, get the team data
         const teamResponse = await axios.get('https://api.balldontlie.io/v1/teams', {
           headers: {
-            'Authorization': 'b6dc962d-e53f-4659-a379-ec939aa673b9'
+            'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
           }
+        }).catch(error => {
+          console.error('Team API Error:', error.response?.data || error.message);
+          throw new Error('Failed to fetch team data. Please try again later.');
         });
         
         const hornetsData = teamResponse.data.data.find(
@@ -192,7 +212,7 @@ export default function Dashboard() {
         );
         
         if (!hornetsData) {
-          throw new Error('Hornets team not found');
+          throw new Error('Hornets team data not found in API response');
         }
 
         setTeamData(hornetsData);
@@ -206,7 +226,7 @@ export default function Dashboard() {
             per_page: 100
           },
           headers: {
-            'Authorization': 'b6dc962d-e53f-4659-a379-ec939aa673b9'
+            'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
           }
         });
 
@@ -238,7 +258,7 @@ export default function Dashboard() {
               cursor: cursor
           },
           headers: {
-              'Authorization': 'b6dc962d-e53f-4659-a379-ec939aa673b9'
+              'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
             }
           });
 
@@ -336,10 +356,20 @@ export default function Dashboard() {
         console.error('Error details:', {
           message: err.message,
           response: err.response?.data,
-          status: err.response?.status
+          status: err.response?.status,
+          stack: err.stack
         });
         setError(`Failed to fetch data: ${err.message}`);
         setLoading(false);
+        setLoadingStates(prev => ({
+          ...prev,
+          teamInfo: false,
+          playerTable: false,
+          leaderboard: false,
+          shootingEfficiency: false,
+          pointsDistribution: false,
+          performanceRadar: false
+        }));
       }
     };
 
