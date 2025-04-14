@@ -131,6 +131,7 @@ export default function Dashboard() {
   const gameLogRef = useRef<HTMLDivElement>(null);
   const [selectedSeason, setSelectedSeason] = useState<number>(2024);
   const availableSeasons = Array.from({ length: 10 }, (_, i) => 2024 - i);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -143,6 +144,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (!authLoading && user) {
       const fetchHornetsData = async () => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+        
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
+
         setLoading(true);
         setError(null);
         setLoadingStates({
@@ -162,16 +170,23 @@ export default function Dashboard() {
             throw new Error('Ball Don\'t Lie API key is not configured');
           }
           
-          // First, get the team data
           const teamResponse = await axios.get('https://api.balldontlie.io/v1/teams', {
             headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
-            }
+            },
+            signal
           }).catch(error => {
+            if (error.name === 'CanceledError') {
+              throw error;
+            }
             console.error('Team API Error:', error.response?.data || error.message);
             throw new Error('Failed to fetch team data. Please try again later.');
           });
           
+          if (signal.aborted) {
+            throw new Error('CanceledError');
+          }
+
           const hornetsData = teamResponse.data.data.find(
             (team: TeamData) => team.name === 'Hornets' || team.full_name === 'Charlotte Hornets'
           );
@@ -184,7 +199,6 @@ export default function Dashboard() {
           setLoadingStates(prev => ({ ...prev, teamInfo: false }));
           console.log('Found Hornets team:', hornetsData);
 
-          // Then, get all players for the Hornets
           const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
             params: {
               team_ids: [hornetsData.id],
@@ -192,11 +206,15 @@ export default function Dashboard() {
             },
             headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
-            }
+            },
+            signal
           });
 
+          if (signal.aborted) {
+            throw new Error('CanceledError');
+          }
+
           console.log('Players response:', playersResponse.data);
-          // Filter players to only include those with all five details
           const playersWithCompleteDetails = playersResponse.data.data.filter((player: Player) => 
             player.position && player.position.trim() !== '' &&
             player.height && player.height.trim() !== '' &&
@@ -208,13 +226,16 @@ export default function Dashboard() {
           setPlayers(playersWithCompleteDetails);
           setLoadingStates(prev => ({ ...prev, playerTable: false, leaderboard: false }));
 
-          // Get stats for all players
           const playerIds = playersWithCompleteDetails.map((player: Player) => player.id);
           let allStats: GameStats[] = [];
           let hasMore = true;
           let cursor = null;
 
           while (hasMore) {
+            if (signal.aborted) {
+              throw new Error('CanceledError');
+            }
+
             const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
               params: {
                 player_ids: playerIds,
@@ -224,7 +245,8 @@ export default function Dashboard() {
               },
               headers: {
                 'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
-              }
+              },
+              signal
             }).then(response => response.data);
 
             allStats = [...allStats, ...statsResponse.data];
@@ -234,10 +256,13 @@ export default function Dashboard() {
             console.log(`Fetched ${statsResponse.data.length} stats, total so far: ${allStats.length}`);
           }
 
+          if (signal.aborted) {
+            throw new Error('CanceledError');
+          }
+
           console.log(`Total stats fetched: ${allStats.length}`);
           setLoadingStates(prev => ({ ...prev, statsLoaded: true }));
 
-          // Calculate averages for each player
           const playersWithStats = playersWithCompleteDetails.map((player: Player) => {
             const playerStats = allStats.filter(stat => stat.player.id === player.id);
             
@@ -290,27 +315,22 @@ export default function Dashboard() {
             };
           });
 
-          // Filter out players with 0 games played
           const activePlayers = playersWithStats.filter((player: Player) => 
             typeof player.games_played === 'number' && player.games_played > 0
           );
           console.log(`Filtered out ${playersWithStats.length - activePlayers.length} players with 0 games played`);
 
-          // Sort players by games played, then minutes, then points
           const sortedPlayers = activePlayers.sort((a: Player, b: Player) => {
-            // First sort by games played
             if (a.games_played !== b.games_played) {
               return (b.games_played || 0) - (a.games_played || 0);
             }
             
-            // Then by minutes per game
             const aMin = parseFloat(a.minutes || '0');
             const bMin = parseFloat(b.minutes || '0');
             if (aMin !== bMin) {
               return bMin - aMin;
             }
             
-            // Finally by points per game
             const aPts = parseFloat(a.average_points || '0');
             const bPts = parseFloat(b.average_points || '0');
             return bPts - aPts;
@@ -320,6 +340,11 @@ export default function Dashboard() {
           setPlayers(sortedPlayers);
           setLoading(false);
         } catch (err: any) {
+          if (err.name === 'CanceledError' || err.message === 'CanceledError') {
+            console.log('Request cancelled due to new season selection');
+            return;
+          }
+
           console.error('Error details:', {
             message: err.message,
             response: err.response?.data,
@@ -341,10 +366,16 @@ export default function Dashboard() {
       };
 
       fetchHornetsData();
+
+      return () => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
+      };
     }
   }, [authLoading, user, selectedSeason]);
 
-  // Prepare data for the shooting efficiency chart
   const shootingData = players
     .map(player => ({
       name: `${player.first_name} ${player.last_name}`,
@@ -353,7 +384,6 @@ export default function Dashboard() {
     }))
     .sort((a, b) => b[sortBy] - a[sortBy]);
 
-  // Add this function to calculate max values and domains
   const calculateStatDomains = (players: Player[]) => {
     const domains = {
       points: Math.ceil(Math.max(...players.map(p => parseFloat(p.average_points || '0')))),
@@ -365,7 +395,6 @@ export default function Dashboard() {
     return domains;
   };
 
-  // Update the getRadarData function to calculate percentages
   const getRadarData = (player: Player, domains: Record<string, number>) => {
     return [
       {
@@ -406,7 +435,6 @@ export default function Dashboard() {
     ];
   };
 
-  // Prepare data for the points distribution chart
   const pointsData = players
     .map(player => ({
       name: `${player.first_name} ${player.last_name}`,
@@ -414,7 +442,6 @@ export default function Dashboard() {
     }))
     .sort((a, b) => b.points - a.points);
 
-  // Sort function for the players table
   const sortPlayers = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -426,7 +453,6 @@ export default function Dashboard() {
   const getSortedPlayers = () => {
     if (!sortConfig.key) return players;
 
-    // Define numeric columns
     const numericColumns = [
       'games_played', 'minutes', 'average_points', 'rebounds', 'assists',
       'steals', 'blocks', 'turnovers', 'personal_fouls', 'jersey_number', 'weight',
@@ -437,14 +463,12 @@ export default function Dashboard() {
       const aValue = a[sortConfig.key as keyof Player];
       const bValue = b[sortConfig.key as keyof Player];
 
-      // Handle numeric columns
       if (numericColumns.includes(sortConfig.key)) {
         const aNum = parseFloat(aValue as string || '0');
         const bNum = parseFloat(bValue as string || '0');
         return sortConfig.direction === 'ascending' ? aNum - bNum : bNum - aNum;
       }
 
-      // Handle string values (for non-numeric columns)
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return sortConfig.direction === 'ascending' 
           ? aValue.localeCompare(bValue)
@@ -460,20 +484,17 @@ export default function Dashboard() {
     return sortConfig.direction === 'ascending' ? '↑' : '↓';
   };
 
-  // Add this function to test the comparison API
   const testComparison = async () => {
     try {
       setComparisonLoading(true);
       setComparisonError(null);
       
-      // Get the selected players from our existing data
       const selectedPlayersData = players.filter(player => selectedPlayers.includes(player.id));
       
       if (selectedPlayersData.length < 2) {
         throw new Error('Please select at least 2 players to compare');
       }
 
-      // Format the data for the comparison table
       const comparisonData: ComparisonData = {
         players: selectedPlayersData.map(player => ({
           id: player.id,
@@ -555,7 +576,6 @@ export default function Dashboard() {
     }
   };
 
-  // Add loading components for each section
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center h-64">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a105c]"></div>
@@ -568,10 +588,8 @@ export default function Dashboard() {
     </div>
   );
 
-  // Calculate domains once for all players
   const statDomains = calculateStatDomains(players);
 
-  // Update the data preparation functions
   const prepareCountingStatsTornadoData = (players: ComparisonData['players']) => {
     if (players.length !== 2) return [];
     
@@ -620,7 +638,6 @@ export default function Dashboard() {
     });
   };
 
-  // Update the handleGameLogClick function
   const handleGameLogClick = async (playerId: number) => {
     const player = players.find(p => p.id === playerId);
     if (!player) return;
@@ -644,7 +661,6 @@ export default function Dashboard() {
       setGameLogPlayer(player);
       setGameLogData(gameStats);
 
-      // Scroll to game log after a short delay to ensure it's rendered
       setTimeout(() => {
         gameLogRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
@@ -681,7 +697,7 @@ export default function Dashboard() {
   }
 
   if (!user) {
-    return null; // Router will handle redirect to login
+    return null;
   }
 
   return (
@@ -738,7 +754,6 @@ export default function Dashboard() {
 
         {!error && (
           <div className="space-y-6">
-            {/* Team Information */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex justify-between items-center mb-6">
@@ -799,7 +814,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Player Leaderboard */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-2xl font-bold text-[#1a105c] mb-6">Player Leaderboard</h2>
@@ -913,7 +927,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Shooting Efficiency Chart */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex justify-between items-center mb-6">
@@ -983,7 +996,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Points Distribution Chart */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-2xl font-bold text-[#1a105c] mb-6">Points Distribution</h2>
@@ -1027,7 +1039,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Performance Radar Chart */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-2xl font-bold text-[#1a105c] mb-2">Player Performance Radar</h2>
@@ -1036,7 +1047,6 @@ export default function Dashboard() {
                   100% indicates the team leader in that category.
                 </p>
                 
-                {/* Player Selection Dropdown */}
                 <div className="mb-6">
                   <label htmlFor="player-select" className="block text-sm font-medium text-[#007487] mb-2">
                     Select Player
@@ -1059,7 +1069,6 @@ export default function Dashboard() {
                   </select>
                 </div>
 
-                {/* Radar Chart */}
                 {selectedPlayer && (
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
@@ -1104,7 +1113,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Players Table */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex flex-col space-y-2 mb-6">
@@ -1302,7 +1310,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Add this test section */}
             <div className="bg-white shadow rounded-lg overflow-hidden mt-6">
               <div className="px-4 py-5 sm:p-6">
                 <h2 className="text-2xl font-bold text-[#1a105c] mb-6">Player Comparison Test</h2>
@@ -1449,7 +1456,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Game Log Section */}
             {gameLogPlayer && (
               <div ref={gameLogRef} className="mt-8 bg-white shadow rounded-lg overflow-hidden">
                 <div className="px-4 py-5 sm:p-6">
