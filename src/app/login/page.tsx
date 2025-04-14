@@ -31,6 +31,16 @@ export default async function LoginPage() {
           <a
             href="/api/auth/login"
             className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#1a105c] hover:bg-[#007487] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#007487] transition-colors duration-200"
+            onClick={(e) => {
+              e.preventDefault();
+              const href = e.currentTarget.href;
+              try {
+                window.location.href = href;
+              } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+              }
+            }}
           >
             Sign in to continue
           </a>
@@ -40,6 +50,9 @@ export default async function LoginPage() {
             Secure authentication powered by{' '}
             <span className="text-[#007487]">Auth0</span>
           </p>
+        </div>
+        <div id="auth-error" className="mt-4 text-center text-sm text-red-600 hidden">
+          Authentication error. Please try again.
         </div>
       </div>
     </div>
