@@ -554,6 +554,35 @@ export default function Dashboard() {
   // Calculate domains once for all players
   const statDomains = calculateStatDomains(players);
 
+  // Add this function to prepare data for the tornado chart
+  const prepareTornadoData = (players: ComparisonData['players']) => {
+    if (players.length !== 2) return [];
+    
+    const stats = [
+      { key: 'points', label: 'Points' },
+      { key: 'rebounds', label: 'Rebounds' },
+      { key: 'assists', label: 'Assists' },
+      { key: 'steals', label: 'Steals' },
+      { key: 'blocks', label: 'Blocks' },
+      { key: 'field_goal_pct', label: 'FG%' },
+      { key: 'three_point_pct', label: '3P%' },
+      { key: 'free_throw_pct', label: 'FT%' }
+    ];
+
+    return stats.map(({ key, label }) => {
+      const value1 = players[0].stats[key].value;
+      const value2 = players[1].stats[key].value;
+      const better = value1 >= value2 ? 0 : 1;
+
+      return {
+        stat: label,
+        [players[0].name]: value1,
+        [players[1].name]: value2,
+        better
+      };
+    });
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -1180,7 +1209,7 @@ export default function Dashboard() {
                 
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-[#007487] mb-2">
-                    Select Players to Compare
+                    Select Two Players to Compare
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {players.map((player) => (
@@ -1189,15 +1218,18 @@ export default function Dashboard() {
                         onClick={() => {
                           if (selectedPlayers.includes(player.id)) {
                             setSelectedPlayers(selectedPlayers.filter(id => id !== player.id));
-                          } else {
+                          } else if (selectedPlayers.length < 2) {
                             setSelectedPlayers([...selectedPlayers, player.id]);
                           }
                         }}
                         className={`px-3 py-1 rounded ${
                           selectedPlayers.includes(player.id)
-                            ? 'bg-[#1a105c] text-white'
+                            ? selectedPlayers.indexOf(player.id) === 0
+                              ? 'bg-[#1a105c] text-white'
+                              : 'bg-[#007487] text-white'
                             : 'bg-[#f8f9fa] text-[#1a105c]'
-                        }`}
+                        } ${selectedPlayers.length === 2 && !selectedPlayers.includes(player.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={selectedPlayers.length === 2 && !selectedPlayers.includes(player.id)}
                       >
                         {player.first_name} {player.last_name}
                       </button>
@@ -1207,9 +1239,9 @@ export default function Dashboard() {
 
                 <button
                   onClick={testComparison}
-                  disabled={selectedPlayers.length < 2 || comparisonLoading}
+                  disabled={selectedPlayers.length !== 2 || comparisonLoading}
                   className={`px-4 py-2 rounded ${
-                    selectedPlayers.length < 2 || comparisonLoading
+                    selectedPlayers.length !== 2 || comparisonLoading
                       ? 'bg-[#a5a5a5] cursor-not-allowed'
                       : 'bg-[#007487] hover:bg-[#005f6b]'
                   } text-white`}
@@ -1223,41 +1255,43 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {comparisonData && comparisonData.players && (
+                {comparisonData && comparisonData.players && comparisonData.players.length === 2 && (
                   <div className="mt-6">
-                    <h3 className="text-lg font-medium text-[#1a105c] mb-4">Comparison Results</h3>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-[#f8f9fa]">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase">
-                              Metric
-                            </th>
-                            {comparisonData.players.map((player) => (
-                              <th
-                                key={player.id}
-                                className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase"
-                              >
-                                {player.name}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {Object.entries(comparisonData.players[0].stats).map(([metric, _]) => (
-                            <tr key={metric}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#1a105c]">
-                                {metric}
-                              </td>
-                              {comparisonData.players.map((player) => (
-                                <td key={player.id} className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">
-                                  {player.stats[metric].value.toFixed(2)}
-                                </td>
-                              ))}
-                            </tr>
+                    <h3 className="text-lg font-medium text-[#1a105c] mb-4">Player Comparison</h3>
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          layout="vertical"
+                          data={prepareTornadoData(comparisonData.players)}
+                          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#a5a5a5" />
+                          <XAxis type="number" />
+                          <YAxis 
+                            type="category" 
+                            dataKey="stat" 
+                            width={80}
+                            tick={{ fontSize: 12 }}
+                          />
+                          <Tooltip 
+                            formatter={(value: number, name: string) => [value.toFixed(1), name]}
+                          />
+                          <Legend />
+                          {comparisonData.players.map((player, index) => (
+                            <Bar
+                              key={player.name}
+                              dataKey={player.name}
+                              fill={`${index === 0 ? '#1a105c' : '#007487'}`}
+                              fillOpacity={0.8}
+                            />
                           ))}
-                        </tbody>
-                      </table>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="mt-4 text-sm text-gray-600">
+                      <p>* Purple bars represent {comparisonData.players[0].name}</p>
+                      <p>* Teal bars represent {comparisonData.players[1].name}</p>
                     </div>
                   </div>
                 )}
