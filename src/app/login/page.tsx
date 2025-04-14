@@ -1,12 +1,26 @@
-import { getSession } from '@auth0/nextjs-auth0';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import Image from 'next/image';
 
-export default async function LoginPage() {
-  const session = await getSession();
+export default function LoginPage() {
+  const { user, isLoading } = useUser();
+  const router = useRouter();
   
-  if (session) {
-    redirect('/dashboard');
+  useEffect(() => {
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a105c]"></div>
+      </div>
+    );
   }
 
   return (
@@ -31,16 +45,6 @@ export default async function LoginPage() {
           <a
             href="/api/auth/login"
             className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-md text-white bg-[#1a105c] hover:bg-[#007487] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#007487] transition-colors duration-200"
-            onClick={(e) => {
-              e.preventDefault();
-              const href = e.currentTarget.href;
-              try {
-                window.location.href = href;
-              } catch (error) {
-                console.error('Login error:', error);
-                alert('Login failed. Please try again.');
-              }
-            }}
           >
             Sign in to continue
           </a>

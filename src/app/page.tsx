@@ -168,12 +168,12 @@ export default function Dashboard() {
           console.log('Found Hornets team:', hornetsData);
 
           // Then, get all players for the Hornets
-          const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
-            params: {
+        const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
+          params: {
               team_ids: [hornetsData.id],
-              per_page: 100
-            },
-            headers: {
+            per_page: 100
+          },
+          headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
             }
           });
@@ -199,13 +199,13 @@ export default function Dashboard() {
 
           while (hasMore) {
             const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
-              params: {
-                player_ids: playerIds,
+          params: {
+            player_ids: playerIds,
                 seasons: [2024],
                 per_page: 100,
                 cursor: cursor
-              },
-              headers: {
+          },
+          headers: {
                 'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
               }
             }).then(response => response.data);
@@ -256,7 +256,7 @@ export default function Dashboard() {
               personal_fouls: (playerStats.reduce((sum, stat) => sum + stat.pf, 0) / totalGames).toFixed(1)
             };
 
-            return {
+          return {
               ...player,
               average_points: averages.points,
               games_played: totalGames,
@@ -270,8 +270,8 @@ export default function Dashboard() {
               blocks: averages.blocks,
               turnovers: averages.turnovers,
               personal_fouls: averages.personal_fouls
-            };
-          });
+          };
+        });
 
           // Filter out players with 0 games played
           const activePlayers = playersWithStats.filter((player: Player) => 
