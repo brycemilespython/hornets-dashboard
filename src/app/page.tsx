@@ -126,6 +126,8 @@ export default function Dashboard() {
     performanceRadar: true,
     statsLoaded: false
   });
+  const [gameLogPlayer, setGameLogPlayer] = useState<Player | null>(null);
+  const [gameLogData, setGameLogData] = useState<GameStats[]>([]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -601,6 +603,34 @@ export default function Dashboard() {
         better
       };
     });
+  };
+
+  // Add function to handle game log click
+  const handleGameLogClick = async (playerId: number) => {
+    const player = players.find(p => p.id === playerId);
+    if (!player) return;
+
+    try {
+      const response = await axios.get('https://api.balldontlie.io/v1/stats', {
+        params: {
+          player_ids: [playerId],
+          seasons: [2024],
+          per_page: 100
+        },
+        headers: {
+          'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
+        }
+      });
+
+      const gameStats = response.data.data.sort((a: GameStats, b: GameStats) => 
+        new Date(b.game.date).getTime() - new Date(a.game.date).getTime()
+      );
+
+      setGameLogPlayer(player);
+      setGameLogData(gameStats);
+    } catch (error) {
+      console.error('Error fetching game log:', error);
+    }
   };
 
   if (authLoading) {
@@ -1158,7 +1188,10 @@ export default function Dashboard() {
                         {getSortedPlayers().map((player) => (
                           <tr key={player.id}>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-[#1a105c]">
+                              <div 
+                                className="text-sm font-medium text-[#1a105c] cursor-pointer hover:text-[#007487] underline"
+                                onClick={() => handleGameLogClick(player.id)}
+                              >
                                 {player.first_name} {player.last_name}
                               </div>
                             </td>
@@ -1299,7 +1332,6 @@ export default function Dashboard() {
                               type="category" 
                               dataKey="stat" 
                               width={80}
-                              tick={{ fontSize: 12 }}
                             />
                             <Tooltip 
                               formatter={(value: number, name: string) => [`${value.toFixed(1)} per game`, name]}
@@ -1369,6 +1401,79 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+
+            {/* Game Log Section */}
+            {gameLogPlayer && (
+              <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
+                <div className="px-4 py-5 sm:p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-lg font-medium text-[#1a105c]">
+                      Game Log - {gameLogPlayer.first_name} {gameLogPlayer.last_name}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setGameLogPlayer(null);
+                        setGameLogData([]);
+                      }}
+                      className="text-gray-400 hover:text-gray-500"
+                    >
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-[#f8f9fa]">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Team</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Min</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Pts</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Reb</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Ast</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Stl</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">Blk</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">TO</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">FG%</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">3P%</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider">FT%</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {gameLogData.map((game) => (
+                          <tr key={game.game.id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#1a105c]">
+                              {new Date(game.game.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">
+                              {game.team.abbreviation}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.min}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.pts}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.reb}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.ast}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.stl}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.blk}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">{game.turnover}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">
+                              {(game.fg_pct * 100).toFixed(1)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">
+                              {(game.fg3_pct * 100).toFixed(1)}%
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-[#007487]">
+                              {(game.ft_pct * 100).toFixed(1)}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
