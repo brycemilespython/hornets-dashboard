@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { useUser } from '@auth0/nextjs-auth0/client';
@@ -128,6 +128,7 @@ export default function Dashboard() {
   });
   const [gameLogPlayer, setGameLogPlayer] = useState<Player | null>(null);
   const [gameLogData, setGameLogData] = useState<GameStats[]>([]);
+  const gameLogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -605,7 +606,7 @@ export default function Dashboard() {
     });
   };
 
-  // Add function to handle game log click
+  // Update the handleGameLogClick function
   const handleGameLogClick = async (playerId: number) => {
     const player = players.find(p => p.id === playerId);
     if (!player) return;
@@ -628,6 +629,11 @@ export default function Dashboard() {
 
       setGameLogPlayer(player);
       setGameLogData(gameStats);
+
+      // Scroll to game log after a short delay to ensure it's rendered
+      setTimeout(() => {
+        gameLogRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     } catch (error) {
       console.error('Error fetching game log:', error);
     }
@@ -1404,18 +1410,19 @@ export default function Dashboard() {
 
             {/* Game Log Section */}
             {gameLogPlayer && (
-              <div className="mt-8 bg-white shadow rounded-lg overflow-hidden">
+              <div ref={gameLogRef} className="mt-8 bg-white shadow rounded-lg overflow-hidden">
                 <div className="px-4 py-5 sm:p-6">
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-medium text-[#1a105c]">
+                    <h2 className="text-2xl font-bold text-[#1a105c]">
                       Game Log - {gameLogPlayer.first_name} {gameLogPlayer.last_name}
-                    </h3>
+                    </h2>
                     <button
                       onClick={() => {
                         setGameLogPlayer(null);
                         setGameLogData([]);
                       }}
                       className="text-gray-400 hover:text-gray-500"
+                      aria-label="Close game log"
                     >
                       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
