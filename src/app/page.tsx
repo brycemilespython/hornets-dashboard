@@ -554,8 +554,8 @@ export default function Dashboard() {
   // Calculate domains once for all players
   const statDomains = calculateStatDomains(players);
 
-  // Add this function to prepare data for the tornado chart
-  const prepareTornadoData = (players: ComparisonData['players']) => {
+  // Update the data preparation functions
+  const prepareCountingStatsTornadoData = (players: ComparisonData['players']) => {
     if (players.length !== 2) return [];
     
     const stats = [
@@ -563,7 +563,27 @@ export default function Dashboard() {
       { key: 'rebounds', label: 'Rebounds' },
       { key: 'assists', label: 'Assists' },
       { key: 'steals', label: 'Steals' },
-      { key: 'blocks', label: 'Blocks' },
+      { key: 'blocks', label: 'Blocks' }
+    ];
+
+    return stats.map(({ key, label }) => {
+      const value1 = players[0].stats[key].value;
+      const value2 = players[1].stats[key].value;
+      const better = value1 >= value2 ? 0 : 1;
+
+      return {
+        stat: label,
+        [players[0].name]: value1,
+        [players[1].name]: value2,
+        better
+      };
+    });
+  };
+
+  const prepareShootingStatsTornadoData = (players: ComparisonData['players']) => {
+    if (players.length !== 2) return [];
+    
+    const stats = [
       { key: 'field_goal_pct', label: 'FG%' },
       { key: 'three_point_pct', label: '3P%' },
       { key: 'free_throw_pct', label: 'FT%' }
@@ -1256,37 +1276,89 @@ export default function Dashboard() {
                 )}
 
                 {comparisonData && comparisonData.players && comparisonData.players.length === 2 && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium text-[#1a105c] mb-4">Player Comparison</h3>
-                    <div className="h-[400px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          layout="vertical"
-                          data={prepareTornadoData(comparisonData.players)}
-                          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#a5a5a5" />
-                          <XAxis type="number" />
-                          <YAxis 
-                            type="category" 
-                            dataKey="stat" 
-                            width={80}
-                            tick={{ fontSize: 12 }}
-                          />
-                          <Tooltip 
-                            formatter={(value: number, name: string) => [value.toFixed(1), name]}
-                          />
-                          <Legend />
-                          {comparisonData.players.map((player, index) => (
-                            <Bar
-                              key={player.name}
-                              dataKey={player.name}
-                              fill={`${index === 0 ? '#1a105c' : '#007487'}`}
-                              fillOpacity={0.8}
+                  <div className="mt-6 space-y-8">
+                    <div>
+                      <h3 className="text-lg font-medium text-[#1a105c] mb-4">Player Comparison - Game Stats</h3>
+                      <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            layout="vertical"
+                            data={prepareCountingStatsTornadoData(comparisonData.players)}
+                            margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#a5a5a5" />
+                            <XAxis 
+                              type="number"
+                              label={{ 
+                                value: 'Per Game Average', 
+                                position: 'insideBottom', 
+                                offset: -5 
+                              }}
                             />
-                          ))}
-                        </BarChart>
-                      </ResponsiveContainer>
+                            <YAxis 
+                              type="category" 
+                              dataKey="stat" 
+                              width={80}
+                              tick={{ fontSize: 12 }}
+                            />
+                            <Tooltip 
+                              formatter={(value: number, name: string) => [`${value.toFixed(1)} per game`, name]}
+                            />
+                            <Legend />
+                            {comparisonData.players.map((player, index) => (
+                              <Bar
+                                key={player.name}
+                                dataKey={player.name}
+                                fill={`${index === 0 ? '#1a105c' : '#007487'}`}
+                                fillOpacity={0.8}
+                              />
+                            ))}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-medium text-[#1a105c] mb-4">Player Comparison - Shooting Percentages</h3>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            layout="vertical"
+                            data={prepareShootingStatsTornadoData(comparisonData.players)}
+                            margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#a5a5a5" />
+                            <XAxis 
+                              type="number" 
+                              domain={[0, 100]}
+                              tickFormatter={(value) => `${value}%`}
+                              label={{ 
+                                value: 'Percentage', 
+                                position: 'insideBottom', 
+                                offset: -5 
+                              }}
+                            />
+                            <YAxis 
+                              type="category" 
+                              dataKey="stat" 
+                              width={80}
+                              tick={{ fontSize: 12 }}
+                            />
+                            <Tooltip 
+                              formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
+                            />
+                            <Legend />
+                            {comparisonData.players.map((player, index) => (
+                              <Bar
+                                key={player.name}
+                                dataKey={player.name}
+                                fill={`${index === 0 ? '#1a105c' : '#007487'}`}
+                                fillOpacity={0.8}
+                              />
+                            ))}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
                     
                     <div className="mt-4 text-sm text-gray-600">
