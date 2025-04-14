@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { useUser } from '@auth0/nextjs-auth0/client';
+import { useRouter } from 'next/navigation';
 
 interface TeamData {
   id: number;
@@ -100,20 +101,8 @@ interface ComparisonData {
 }
 
 export default function Dashboard() {
-  // Check for API key at the start
-  if (!process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY) {
-    console.error('Ball Don\'t Lie API key is not set');
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h2>
-          <p className="text-gray-700">The application is not properly configured. Please contact the administrator.</p>
-        </div>
-      </div>
-    );
-  }
-
   const { user, error: authError, isLoading: authLoading } = useUser();
+  const router = useRouter();
   const [teamData, setTeamData] = useState<TeamData | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -138,240 +127,205 @@ export default function Dashboard() {
     statsLoaded: false
   });
 
-  // Add protected route check
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1a105c]"></div>
-      </div>
-    );
-  }
-
-  if (authError) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">Authentication Error: {authError.message}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-[#1a105c] mb-4">Welcome to Hornets Dashboard</h1>
-          <p className="text-gray-600 mb-8">Please log in to access the dashboard</p>
-          <a
-            href="/api/auth/login"
-            className="bg-[#1a105c] hover:bg-[#007487] text-white font-bold py-2 px-4 rounded"
-          >
-            Log In
-          </a>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login');
+      }
+    }
+  }, [authLoading, user, router]);
 
   useEffect(() => {
-    const fetchHornetsData = async () => {
-      try {
-        console.log('Starting API requests...');
-        
-        if (!process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY) {
-          throw new Error('Ball Don\'t Lie API key is not configured');
-        }
-        
-        // First, get the team data
-        const teamResponse = await axios.get('https://api.balldontlie.io/v1/teams', {
-          headers: {
-            'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
+    if (!authLoading && user) {
+      const fetchHornetsData = async () => {
+        try {
+          console.log('Starting API requests...');
+          
+          if (!process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY) {
+            throw new Error('Ball Don\'t Lie API key is not configured');
           }
-        }).catch(error => {
-          console.error('Team API Error:', error.response?.data || error.message);
-          throw new Error('Failed to fetch team data. Please try again later.');
-        });
-        
-        const hornetsData = teamResponse.data.data.find(
-          (team: TeamData) => team.name === 'Hornets' || team.full_name === 'Charlotte Hornets'
-        );
-        
-        if (!hornetsData) {
-          throw new Error('Hornets team data not found in API response');
-        }
-
-        setTeamData(hornetsData);
-        setLoadingStates(prev => ({ ...prev, teamInfo: false }));
-        console.log('Found Hornets team:', hornetsData);
-
-        // Then, get all players for the Hornets
-        const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
-          params: {
-            team_ids: [hornetsData.id],
-            per_page: 100
-          },
-          headers: {
-            'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
+          
+          // First, get the team data
+          const teamResponse = await axios.get('https://api.balldontlie.io/v1/teams', {
+            headers: {
+              'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
+            }
+          }).catch(error => {
+            console.error('Team API Error:', error.response?.data || error.message);
+            throw new Error('Failed to fetch team data. Please try again later.');
+          });
+          
+          const hornetsData = teamResponse.data.data.find(
+            (team: TeamData) => team.name === 'Hornets' || team.full_name === 'Charlotte Hornets'
+          );
+          
+          if (!hornetsData) {
+            throw new Error('Hornets team data not found in API response');
           }
-        });
 
-        console.log('Players response:', playersResponse.data);
-        // Filter players to only include those with all five details
-        const playersWithCompleteDetails = playersResponse.data.data.filter((player: Player) => 
-          player.position && player.position.trim() !== '' &&
-          player.height && player.height.trim() !== '' &&
-          player.weight && player.weight.trim() !== '' &&
-          player.jersey_number && player.jersey_number.trim() !== '' &&
-          player.college && player.college.trim() !== ''
-        );
+          setTeamData(hornetsData);
+          setLoadingStates(prev => ({ ...prev, teamInfo: false }));
+          console.log('Found Hornets team:', hornetsData);
 
-        setPlayers(playersWithCompleteDetails);
-        setLoadingStates(prev => ({ ...prev, playerTable: false, leaderboard: false }));
-
-        // Get stats for all players
-        const playerIds = playersWithCompleteDetails.map((player: Player) => player.id);
-        let allStats: GameStats[] = [];
-        let hasMore = true;
-        let cursor = null;
-
-        while (hasMore) {
-          const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
+          // Then, get all players for the Hornets
+          const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
             params: {
-              player_ids: playerIds,
-              seasons: [2024],
-              per_page: 100,
-              cursor: cursor
+              team_ids: [hornetsData.id],
+              per_page: 100
             },
             headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
             }
-          }).then(response => response.data);
+          });
 
-          allStats = [...allStats, ...statsResponse.data];
-          cursor = statsResponse.meta.next_cursor;
-          hasMore = !!cursor && statsResponse.data.length > 0;
+          console.log('Players response:', playersResponse.data);
+          // Filter players to only include those with all five details
+          const playersWithCompleteDetails = playersResponse.data.data.filter((player: Player) => 
+            player.position && player.position.trim() !== '' &&
+            player.height && player.height.trim() !== '' &&
+            player.weight && player.weight.trim() !== '' &&
+            player.jersey_number && player.jersey_number.trim() !== '' &&
+            player.college && player.college.trim() !== ''
+          );
 
-          console.log(`Fetched ${statsResponse.data.length} stats, total so far: ${allStats.length}`);
-        }
+          setPlayers(playersWithCompleteDetails);
+          setLoadingStates(prev => ({ ...prev, playerTable: false, leaderboard: false }));
 
-        console.log(`Total stats fetched: ${allStats.length}`);
-        setLoadingStates(prev => ({ ...prev, statsLoaded: true }));
+          // Get stats for all players
+          const playerIds = playersWithCompleteDetails.map((player: Player) => player.id);
+          let allStats: GameStats[] = [];
+          let hasMore = true;
+          let cursor = null;
 
-        // Calculate averages for each player
-        const playersWithStats = playersWithCompleteDetails.map((player: Player) => {
-          const playerStats = allStats.filter(stat => stat.player.id === player.id);
-          
-          if (playerStats.length === 0) {
+          while (hasMore) {
+            const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
+              params: {
+                player_ids: playerIds,
+                seasons: [2024],
+                per_page: 100,
+                cursor: cursor
+              },
+              headers: {
+                'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
+              }
+            }).then(response => response.data);
+
+            allStats = [...allStats, ...statsResponse.data];
+            cursor = statsResponse.meta.next_cursor;
+            hasMore = !!cursor && statsResponse.data.length > 0;
+
+            console.log(`Fetched ${statsResponse.data.length} stats, total so far: ${allStats.length}`);
+          }
+
+          console.log(`Total stats fetched: ${allStats.length}`);
+          setLoadingStates(prev => ({ ...prev, statsLoaded: true }));
+
+          // Calculate averages for each player
+          const playersWithStats = playersWithCompleteDetails.map((player: Player) => {
+            const playerStats = allStats.filter(stat => stat.player.id === player.id);
+            
+            if (playerStats.length === 0) {
+              return {
+                ...player,
+                average_points: '-',
+                games_played: 0,
+                minutes: '-',
+                field_goal_pct: '-',
+                three_point_pct: '-',
+                rebounds: '-',
+                assists: '-',
+                steals: '-',
+                blocks: '-',
+                turnovers: '-',
+                personal_fouls: '-'
+              };
+            }
+
+            const totalGames = playerStats.length;
+            const averages = {
+              points: (playerStats.reduce((sum, stat) => sum + stat.pts, 0) / totalGames).toFixed(1),
+              rebounds: (playerStats.reduce((sum, stat) => sum + stat.reb, 0) / totalGames).toFixed(1),
+              assists: (playerStats.reduce((sum, stat) => sum + stat.ast, 0) / totalGames).toFixed(1),
+              steals: (playerStats.reduce((sum, stat) => sum + stat.stl, 0) / totalGames).toFixed(1),
+              blocks: (playerStats.reduce((sum, stat) => sum + stat.blk, 0) / totalGames).toFixed(1),
+              field_goal_pct: (playerStats.reduce((sum, stat) => sum + stat.fg_pct, 0) / totalGames * 100).toFixed(1),
+              three_point_pct: (playerStats.reduce((sum, stat) => sum + stat.fg3_pct, 0) / totalGames * 100).toFixed(1),
+              free_throw_pct: (playerStats.reduce((sum, stat) => sum + stat.ft_pct, 0) / totalGames * 100).toFixed(1),
+              minutes: (playerStats.reduce((sum, stat) => sum + parseFloat(stat.min), 0) / totalGames).toFixed(1),
+              turnovers: (playerStats.reduce((sum, stat) => sum + stat.turnover, 0) / totalGames).toFixed(1),
+              personal_fouls: (playerStats.reduce((sum, stat) => sum + stat.pf, 0) / totalGames).toFixed(1)
+            };
+
             return {
               ...player,
-              average_points: '-',
-              games_played: 0,
-              minutes: '-',
-              field_goal_pct: '-',
-              three_point_pct: '-',
-              rebounds: '-',
-              assists: '-',
-              steals: '-',
-              blocks: '-',
-              turnovers: '-',
-              personal_fouls: '-'
+              average_points: averages.points,
+              games_played: totalGames,
+              minutes: averages.minutes,
+              field_goal_pct: averages.field_goal_pct,
+              three_point_pct: averages.three_point_pct,
+              free_throw_pct: averages.free_throw_pct,
+              rebounds: averages.rebounds,
+              assists: averages.assists,
+              steals: averages.steals,
+              blocks: averages.blocks,
+              turnovers: averages.turnovers,
+              personal_fouls: averages.personal_fouls
             };
-          }
+          });
 
-          const totalGames = playerStats.length;
-          const averages = {
-            points: (playerStats.reduce((sum, stat) => sum + stat.pts, 0) / totalGames).toFixed(1),
-            rebounds: (playerStats.reduce((sum, stat) => sum + stat.reb, 0) / totalGames).toFixed(1),
-            assists: (playerStats.reduce((sum, stat) => sum + stat.ast, 0) / totalGames).toFixed(1),
-            steals: (playerStats.reduce((sum, stat) => sum + stat.stl, 0) / totalGames).toFixed(1),
-            blocks: (playerStats.reduce((sum, stat) => sum + stat.blk, 0) / totalGames).toFixed(1),
-            field_goal_pct: (playerStats.reduce((sum, stat) => sum + stat.fg_pct, 0) / totalGames * 100).toFixed(1),
-            three_point_pct: (playerStats.reduce((sum, stat) => sum + stat.fg3_pct, 0) / totalGames * 100).toFixed(1),
-            free_throw_pct: (playerStats.reduce((sum, stat) => sum + stat.ft_pct, 0) / totalGames * 100).toFixed(1),
-            minutes: (playerStats.reduce((sum, stat) => sum + parseFloat(stat.min), 0) / totalGames).toFixed(1),
-            turnovers: (playerStats.reduce((sum, stat) => sum + stat.turnover, 0) / totalGames).toFixed(1),
-            personal_fouls: (playerStats.reduce((sum, stat) => sum + stat.pf, 0) / totalGames).toFixed(1)
-          };
+          // Filter out players with 0 games played
+          const activePlayers = playersWithStats.filter((player: Player) => 
+            typeof player.games_played === 'number' && player.games_played > 0
+          );
+          console.log(`Filtered out ${playersWithStats.length - activePlayers.length} players with 0 games played`);
 
-          return {
-            ...player,
-            average_points: averages.points,
-            games_played: totalGames,
-            minutes: averages.minutes,
-            field_goal_pct: averages.field_goal_pct,
-            three_point_pct: averages.three_point_pct,
-            free_throw_pct: averages.free_throw_pct,
-            rebounds: averages.rebounds,
-            assists: averages.assists,
-            steals: averages.steals,
-            blocks: averages.blocks,
-            turnovers: averages.turnovers,
-            personal_fouls: averages.personal_fouls
-          };
-        });
+          // Sort players by games played, then minutes, then points
+          const sortedPlayers = activePlayers.sort((a: Player, b: Player) => {
+            // First sort by games played
+            if (a.games_played !== b.games_played) {
+              return (b.games_played || 0) - (a.games_played || 0);
+            }
+            
+            // Then by minutes per game
+            const aMin = parseFloat(a.minutes || '0');
+            const bMin = parseFloat(b.minutes || '0');
+            if (aMin !== bMin) {
+              return bMin - aMin;
+            }
+            
+            // Finally by points per game
+            const aPts = parseFloat(a.average_points || '0');
+            const bPts = parseFloat(b.average_points || '0');
+            return bPts - aPts;
+          });
 
-        // Filter out players with 0 games played
-        const activePlayers = playersWithStats.filter((player: Player) => 
-          typeof player.games_played === 'number' && player.games_played > 0
-        );
-        console.log(`Filtered out ${playersWithStats.length - activePlayers.length} players with 0 games played`);
+          console.log('Active players with stats:', sortedPlayers);
+          setPlayers(sortedPlayers);
+          setLoading(false);
+        } catch (err: any) {
+          console.error('Error details:', {
+            message: err.message,
+            response: err.response?.data,
+            status: err.response?.status,
+            stack: err.stack
+          });
+          setError(`Failed to fetch data: ${err.message}`);
+          setLoading(false);
+          setLoadingStates(prev => ({
+            ...prev,
+            teamInfo: false,
+            playerTable: false,
+            leaderboard: false,
+            shootingEfficiency: false,
+            pointsDistribution: false,
+            performanceRadar: false
+          }));
+        }
+      };
 
-        // Sort players by games played, then minutes, then points
-        const sortedPlayers = activePlayers.sort((a: Player, b: Player) => {
-          // First sort by games played
-          if (a.games_played !== b.games_played) {
-            return (b.games_played || 0) - (a.games_played || 0);
-          }
-          
-          // Then by minutes per game
-          const aMin = parseFloat(a.minutes || '0');
-          const bMin = parseFloat(b.minutes || '0');
-          if (aMin !== bMin) {
-            return bMin - aMin;
-          }
-          
-          // Finally by points per game
-          const aPts = parseFloat(a.average_points || '0');
-          const bPts = parseFloat(b.average_points || '0');
-          return bPts - aPts;
-        });
-
-        console.log('Active players with stats:', sortedPlayers);
-        setPlayers(sortedPlayers);
-        setLoading(false);
-      } catch (err: any) {
-        console.error('Error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status,
-          stack: err.stack
-        });
-        setError(`Failed to fetch data: ${err.message}`);
-        setLoading(false);
-        setLoadingStates(prev => ({
-          ...prev,
-          teamInfo: false,
-          playerTable: false,
-          leaderboard: false,
-          shootingEfficiency: false,
-          pointsDistribution: false,
-          performanceRadar: false
-        }));
-      }
-    };
-
-    fetchHornetsData();
-  }, []);
+      fetchHornetsData();
+    }
+  }, [authLoading, user]);
 
   // Prepare data for the shooting efficiency chart
   const shootingData = players
@@ -553,6 +507,37 @@ export default function Dashboard() {
       <div className="bg-[#1a105c] h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
     </div>
   );
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1a105c]"></div>
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{authError.message}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Router will handle redirect to login
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
