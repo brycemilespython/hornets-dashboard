@@ -348,33 +348,43 @@ export default function Dashboard() {
     return domains;
   };
 
-  // Update the getRadarData function
+  // Update the getRadarData function to calculate percentages
   const getRadarData = (player: Player, domains: Record<string, number>) => {
     return [
       {
-        subject: `Points (max: ${domains.points})`,
-        value: parseFloat(player.average_points || '0'),
-        fullMark: domains.points
+        subject: 'Points',
+        value: Math.round((parseFloat(player.average_points || '0') / domains.points) * 100),
+        fullMark: 100,
+        actualValue: parseFloat(player.average_points || '0').toFixed(1),
+        maxValue: domains.points
       },
       {
-        subject: `Rebounds (max: ${domains.rebounds})`,
-        value: parseFloat(player.rebounds || '0'),
-        fullMark: domains.rebounds
+        subject: 'Rebounds',
+        value: Math.round((parseFloat(player.rebounds || '0') / domains.rebounds) * 100),
+        fullMark: 100,
+        actualValue: parseFloat(player.rebounds || '0').toFixed(1),
+        maxValue: domains.rebounds
       },
       {
-        subject: `Assists (max: ${domains.assists})`,
-        value: parseFloat(player.assists || '0'),
-        fullMark: domains.assists
+        subject: 'Assists',
+        value: Math.round((parseFloat(player.assists || '0') / domains.assists) * 100),
+        fullMark: 100,
+        actualValue: parseFloat(player.assists || '0').toFixed(1),
+        maxValue: domains.assists
       },
       {
-        subject: `Steals (max: ${domains.steals})`,
-        value: parseFloat(player.steals || '0'),
-        fullMark: domains.steals
+        subject: 'Steals',
+        value: Math.round((parseFloat(player.steals || '0') / domains.steals) * 100),
+        fullMark: 100,
+        actualValue: parseFloat(player.steals || '0').toFixed(1),
+        maxValue: domains.steals
       },
       {
-        subject: `Blocks (max: ${domains.blocks})`,
-        value: parseFloat(player.blocks || '0'),
-        fullMark: domains.blocks
+        subject: 'Blocks',
+        value: Math.round((parseFloat(player.blocks || '0') / domains.blocks) * 100),
+        fullMark: 100,
+        actualValue: parseFloat(player.blocks || '0').toFixed(1),
+        maxValue: domains.blocks
       }
     ];
   };
@@ -898,7 +908,11 @@ export default function Dashboard() {
             {/* Performance Radar Chart */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
-                <h2 className="text-2xl font-bold text-[#1a105c] mb-6">Player Performance Radar</h2>
+                <h2 className="text-2xl font-bold text-[#1a105c] mb-2">Player Performance Radar</h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  Shows how each player's statistics compare as a percentage of the team's best performance in each category. 
+                  100% indicates the team leader in that category.
+                </p>
                 
                 {/* Player Selection Dropdown */}
                 <div className="mb-6">
@@ -932,8 +946,6 @@ export default function Dashboard() {
                         cy="50%" 
                         outerRadius="80%" 
                         data={getRadarData(selectedPlayer, statDomains)}
-                        startAngle={90}
-                        endAngle={-270}
                       >
                         <PolarGrid stroke="#a5a5a5" />
                         <PolarAngleAxis 
@@ -944,40 +956,10 @@ export default function Dashboard() {
                             fontSize: 12
                           }}
                         />
-                        {/* Create individual PolarRadiusAxis components for each stat */}
                         <PolarRadiusAxis
-                          angle={90}  // Points
-                          domain={[0, statDomains.points]}
-                          axisLine={false}
-                          tick={{ fontSize: 10 }}
-                          stroke="#1a105c"
-                        />
-                        <PolarRadiusAxis
-                          angle={162}  // Rebounds
-                          domain={[0, statDomains.rebounds]}
-                          axisLine={false}
-                          tick={{ fontSize: 10 }}
-                          stroke="#1a105c"
-                        />
-                        <PolarRadiusAxis
-                          angle={234}  // Assists
-                          domain={[0, statDomains.assists]}
-                          axisLine={false}
-                          tick={{ fontSize: 10 }}
-                          stroke="#1a105c"
-                        />
-                        <PolarRadiusAxis
-                          angle={306}  // Steals
-                          domain={[0, statDomains.steals]}
-                          axisLine={false}
-                          tick={{ fontSize: 10 }}
-                          stroke="#1a105c"
-                        />
-                        <PolarRadiusAxis
-                          angle={18}  // Blocks
-                          domain={[0, statDomains.blocks]}
-                          axisLine={false}
-                          tick={{ fontSize: 10 }}
+                          angle={90}
+                          domain={[0, 100]}
+                          tickFormatter={(value) => `${value}%`}
                           stroke="#1a105c"
                         />
                         <Radar
@@ -988,8 +970,10 @@ export default function Dashboard() {
                           fillOpacity={0.6}
                         />
                         <Tooltip 
-                          formatter={(value: number) => [value.toFixed(1), '']}
-                          labelFormatter={(label: string) => label.split(' (')[0]}
+                          formatter={(value: number, name: string, props: any) => [
+                            `${props.payload.actualValue} (${value}% of ${props.payload.maxValue})`,
+                            props.payload.subject
+                          ]}
                         />
                       </RadarChart>
                     </ResponsiveContainer>
