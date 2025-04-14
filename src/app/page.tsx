@@ -12,7 +12,12 @@ interface PlayerStats {
   points_per_game: number;
   rebounds_per_game: number;
   assists_per_game: number;
+  field_goal_percentage: number;
+  minutes_per_game: number;
 }
+
+// API key is hardcoded here for testing - in production, this should be moved to a server-side API route
+const API_KEY = 'b6dc962d-e53f-4659-a379-ec939aa673b9';
 
 export default function Dashboard() {
   const { user, error, isLoading } = useUser();
@@ -21,22 +26,56 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchPlayerStats = async () => {
       try {
-        const response = await axios.get('https://api.balldontlie.io/v1/players', {
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY}`
-          },
+        // First, get all players for the Hornets
+        const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
           params: {
-            team_ids: [1610612766] // Charlotte Hornets team ID
+            team_ids: [4], // Charlotte Hornets team ID
+            per_page: 100
+          },
+          headers: {
+            'Authorization': API_KEY
           }
         });
-        setPlayerStats(response.data.data);
+
+        // Get player IDs
+        const playerIds = playersResponse.data.data.map((player: any) => player.id);
+
+        // Then, get season averages for these players
+        const seasonAveragesResponse = await axios.get('https://api.balldontlie.io/v1/season_averages', {
+          params: {
+            player_ids: playerIds,
+            season: 2023 // Current season
+          },
+          headers: {
+            'Authorization': API_KEY
+          }
+        });
+
+        // Combine player info with season averages
+        const combinedStats = seasonAveragesResponse.data.data.map((avg: any) => {
+          const player = playersResponse.data.data.find((p: any) => p.id === avg.player_id);
+          return {
+            id: avg.player_id,
+            first_name: player?.first_name || '',
+            last_name: player?.last_name || '',
+            points_per_game: parseFloat(avg.pts),
+            rebounds_per_game: parseFloat(avg.reb),
+            assists_per_game: parseFloat(avg.ast),
+            field_goal_percentage: parseFloat(avg.fg_pct),
+            minutes_per_game: parseFloat(avg.min)
+          };
+        });
+
+        setPlayerStats(combinedStats);
       } catch (error) {
         console.error('Error fetching player stats:', error);
       }
     };
 
-    fetchPlayerStats();
-  }, []);
+    if (user) {
+      fetchPlayerStats();
+    }
+  }, [user]);
 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>{error.message}</div>;
@@ -95,6 +134,8 @@ export default function Dashboard() {
                   <Bar dataKey="points_per_game" fill="#8884d8" name="Points per Game" />
                   <Bar dataKey="rebounds_per_game" fill="#82ca9d" name="Rebounds per Game" />
                   <Bar dataKey="assists_per_game" fill="#ffc658" name="Assists per Game" />
+                  <Bar dataKey="field_goal_percentage" fill="#ff8042" name="FG%" />
+                  <Bar dataKey="minutes_per_game" fill="#0088fe" name="Minutes per Game" />
                 </BarChart>
               </div>
             </div>
