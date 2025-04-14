@@ -412,7 +412,8 @@ export default function Dashboard() {
     // Define numeric columns
     const numericColumns = [
       'games_played', 'minutes', 'average_points', 'rebounds', 'assists',
-      'steals', 'blocks', 'turnovers', 'personal_fouls', 'jersey_number', 'weight'
+      'steals', 'blocks', 'turnovers', 'personal_fouls', 'jersey_number', 'weight',
+      'field_goal_pct', 'three_point_pct', 'free_throw_pct'
     ];
 
     return [...players].sort((a, b) => {
@@ -1026,24 +1027,6 @@ export default function Dashboard() {
                           </th>
                           <th 
                             className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
-                            onClick={() => sortPlayers('field_goal_pct')}
-                          >
-                            FG% {getSortIcon('field_goal_pct')}
-                          </th>
-                          <th 
-                            className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
-                            onClick={() => sortPlayers('three_point_pct')}
-                          >
-                            3P% {getSortIcon('three_point_pct')}
-                          </th>
-                          <th 
-                            className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
-                            onClick={() => sortPlayers('free_throw_pct')}
-                          >
-                            FT% {getSortIcon('free_throw_pct')}
-                          </th>
-                          <th 
-                            className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
                             onClick={() => sortPlayers('rebounds')}
                           >
                             Reb {getSortIcon('rebounds')}
@@ -1077,6 +1060,24 @@ export default function Dashboard() {
                             onClick={() => sortPlayers('personal_fouls')}
                           >
                             PF {getSortIcon('personal_fouls')}
+                          </th>
+                          <th 
+                            className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
+                            onClick={() => sortPlayers('field_goal_pct')}
+                          >
+                            FG% {getSortIcon('field_goal_pct')}
+                          </th>
+                          <th 
+                            className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
+                            onClick={() => sortPlayers('three_point_pct')}
+                          >
+                            3P% {getSortIcon('three_point_pct')}
+                          </th>
+                          <th 
+                            className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
+                            onClick={() => sortPlayers('free_throw_pct')}
+                          >
+                            FT% {getSortIcon('free_throw_pct')}
                           </th>
                           <th 
                             className="px-6 py-3 text-left text-xs font-medium text-[#007487] uppercase tracking-wider cursor-pointer hover:bg-[#e9ecef]"
@@ -1125,15 +1126,6 @@ export default function Dashboard() {
                               <div className="text-sm text-[#007487]">{player.average_points}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-[#007487]">{player.field_goal_pct}%</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-[#007487]">{player.three_point_pct}%</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm text-[#007487]">{player.free_throw_pct}%</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-[#007487]">{player.rebounds}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -1150,6 +1142,15 @@ export default function Dashboard() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-[#007487]">{player.personal_fouls}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-[#007487]">{player.field_goal_pct}%</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-[#007487]">{player.three_point_pct}%</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-[#007487]">{player.free_throw_pct}%</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-[#007487]">{player.jersey_number}</div>
