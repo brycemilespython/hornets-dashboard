@@ -129,6 +129,8 @@ export default function Dashboard() {
   const [gameLogPlayer, setGameLogPlayer] = useState<Player | null>(null);
   const [gameLogData, setGameLogData] = useState<GameStats[]>([]);
   const gameLogRef = useRef<HTMLDivElement>(null);
+  const [selectedSeason, setSelectedSeason] = useState<number>(2024);
+  const availableSeasons = Array.from({ length: 10 }, (_, i) => 2024 - i);
 
   useEffect(() => {
     if (!authLoading) {
@@ -141,6 +143,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (!authLoading && user) {
       const fetchHornetsData = async () => {
+        setLoading(true);
+        setError(null);
+        setLoadingStates({
+          teamInfo: true,
+          playerTable: true,
+          leaderboard: true,
+          shootingEfficiency: true,
+          pointsDistribution: true,
+          performanceRadar: true,
+          statsLoaded: false
+        });
+
         try {
           console.log('Starting API requests...');
           
@@ -171,12 +185,12 @@ export default function Dashboard() {
           console.log('Found Hornets team:', hornetsData);
 
           // Then, get all players for the Hornets
-        const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
-          params: {
+          const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
+            params: {
               team_ids: [hornetsData.id],
-            per_page: 100
-          },
-          headers: {
+              per_page: 100
+            },
+            headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
             }
           });
@@ -202,13 +216,13 @@ export default function Dashboard() {
 
           while (hasMore) {
             const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
-          params: {
-            player_ids: playerIds,
-                seasons: [2024],
+              params: {
+                player_ids: playerIds,
+                seasons: [selectedSeason],
                 per_page: 100,
                 cursor: cursor
-          },
-          headers: {
+              },
+              headers: {
                 'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
               }
             }).then(response => response.data);
@@ -259,7 +273,7 @@ export default function Dashboard() {
               personal_fouls: (playerStats.reduce((sum, stat) => sum + stat.pf, 0) / totalGames).toFixed(1)
             };
 
-          return {
+            return {
               ...player,
               average_points: averages.points,
               games_played: totalGames,
@@ -273,8 +287,8 @@ export default function Dashboard() {
               blocks: averages.blocks,
               turnovers: averages.turnovers,
               personal_fouls: averages.personal_fouls
-          };
-        });
+            };
+          });
 
           // Filter out players with 0 games played
           const activePlayers = playersWithStats.filter((player: Player) => 
@@ -328,7 +342,7 @@ export default function Dashboard() {
 
       fetchHornetsData();
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, selectedSeason]);
 
   // Prepare data for the shooting efficiency chart
   const shootingData = players
@@ -724,7 +738,26 @@ export default function Dashboard() {
             {/* Team Information */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
-                <h2 className="text-2xl font-bold text-[#1a105c] mb-6">Team Information</h2>
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-[#1a105c]">Team Information</h2>
+                  <div className="flex items-center space-x-2">
+                    <label htmlFor="season-select" className="text-sm font-medium text-[#007487]">
+                      Season
+                    </label>
+                    <select
+                      id="season-select"
+                      value={selectedSeason}
+                      onChange={(e) => setSelectedSeason(parseInt(e.target.value))}
+                      className="block rounded-md border-gray-300 shadow-sm focus:border-[#007487] focus:ring-[#007487] sm:text-sm"
+                    >
+                      {availableSeasons.map((season) => (
+                        <option key={season} value={season}>
+                          {season}-{(season + 1).toString().slice(2)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 {loadingStates.teamInfo ? (
                   <LoadingBar />
                 ) : (
