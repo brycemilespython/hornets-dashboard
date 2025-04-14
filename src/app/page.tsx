@@ -91,17 +91,12 @@ interface ComparisonData {
     stats: {
       [key: string]: {
         value: number;
-        rank: number;
-        percentile: number;
+        rank?: number;
+        percentile?: number;
       };
     };
   }>;
-  comparisons: {
-    [key: string]: {
-      leader: number;
-      difference: number;
-    };
-  };
+  comparisons: Record<string, never>; // Empty object type
 }
 
 export default function Dashboard() {
@@ -250,23 +245,23 @@ export default function Dashboard() {
         let cursor = null;
 
         while (hasMore) {
-          const statsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
-          params: {
-            player_ids: playerIds,
+          const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
+            params: {
+              player_ids: playerIds,
               seasons: [2024],
               per_page: 100,
               cursor: cursor
-          },
-          headers: {
+            },
+            headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
             }
-          });
+          }).then(response => response.data);
 
-          allStats = [...allStats, ...statsResponse.data.data];
-          cursor = statsResponse.data.meta.next_cursor;
-          hasMore = !!cursor && statsResponse.data.data.length > 0;
+          allStats = [...allStats, ...statsResponse.data];
+          cursor = statsResponse.meta.next_cursor;
+          hasMore = !!cursor && statsResponse.data.length > 0;
 
-          console.log(`Fetched ${statsResponse.data.data.length} stats, total so far: ${allStats.length}`);
+          console.log(`Fetched ${statsResponse.data.length} stats, total so far: ${allStats.length}`);
         }
 
         console.log(`Total stats fetched: ${allStats.length}`);
@@ -326,14 +321,16 @@ export default function Dashboard() {
         });
 
         // Filter out players with 0 games played
-        const activePlayers = playersWithStats.filter(player => player.games_played > 0);
+        const activePlayers = playersWithStats.filter((player: Player) => 
+          typeof player.games_played === 'number' && player.games_played > 0
+        );
         console.log(`Filtered out ${playersWithStats.length - activePlayers.length} players with 0 games played`);
 
         // Sort players by games played, then minutes, then points
-        const sortedPlayers = activePlayers.sort((a, b) => {
+        const sortedPlayers = activePlayers.sort((a: Player, b: Player) => {
           // First sort by games played
           if (a.games_played !== b.games_played) {
-            return b.games_played - a.games_played;
+            return (b.games_played || 0) - (a.games_played || 0);
           }
           
           // Then by minutes per game
@@ -463,26 +460,75 @@ export default function Dashboard() {
       }
 
       // Format the data for the comparison table
-      const comparisonData = {
+      const comparisonData: ComparisonData = {
         players: selectedPlayersData.map(player => ({
           id: player.id,
           name: `${player.first_name} ${player.last_name}`,
           position: player.position,
           stats: {
-            points: { value: parseFloat(parseFloat(player.average_points || '0').toFixed(1)) },
-            rebounds: { value: parseFloat(parseFloat(player.rebounds || '0').toFixed(1)) },
-            assists: { value: parseFloat(parseFloat(player.assists || '0').toFixed(1)) },
-            steals: { value: parseFloat(parseFloat(player.steals || '0').toFixed(1)) },
-            blocks: { value: parseFloat(parseFloat(player.blocks || '0').toFixed(1)) },
-            field_goal_pct: { value: parseFloat(parseFloat(player.field_goal_pct || '0').toFixed(1)) },
-            three_point_pct: { value: parseFloat(parseFloat(player.three_point_pct || '0').toFixed(1)) },
-            free_throw_pct: { value: parseFloat(parseFloat(player.free_throw_pct || '0').toFixed(1)) },
-            minutes: { value: parseFloat(parseFloat(player.minutes || '0').toFixed(1)) },
-            games_played: { value: player.games_played || 0 },
-            turnovers: { value: parseFloat(parseFloat(player.turnovers || '0').toFixed(1)) },
-            personal_fouls: { value: parseFloat(parseFloat(player.personal_fouls || '0').toFixed(1)) }
+            points: { 
+              value: parseFloat(parseFloat(player.average_points || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            rebounds: { 
+              value: parseFloat(parseFloat(player.rebounds || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            assists: { 
+              value: parseFloat(parseFloat(player.assists || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            steals: { 
+              value: parseFloat(parseFloat(player.steals || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            blocks: { 
+              value: parseFloat(parseFloat(player.blocks || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            field_goal_pct: { 
+              value: parseFloat(parseFloat(player.field_goal_pct || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            three_point_pct: { 
+              value: parseFloat(parseFloat(player.three_point_pct || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            free_throw_pct: { 
+              value: parseFloat(parseFloat(player.free_throw_pct || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            minutes: { 
+              value: parseFloat(parseFloat(player.minutes || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            games_played: { 
+              value: player.games_played || 0,
+              rank: 0,
+              percentile: 0
+            },
+            turnovers: { 
+              value: parseFloat(parseFloat(player.turnovers || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            },
+            personal_fouls: { 
+              value: parseFloat(parseFloat(player.personal_fouls || '0').toFixed(1)),
+              rank: 0,
+              percentile: 0
+            }
           }
-        }))
+        })),
+        comparisons: {}
       };
 
       setComparisonData(comparisonData);
