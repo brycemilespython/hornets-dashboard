@@ -692,26 +692,29 @@ export default function Dashboard() {
             <div className="flex items-center">
               <h1 className="text-white text-xl font-bold">Charlotte Hornets Dashboard</h1>
             </div>
-                <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-center flex-1">
               <img 
                 src="/Charlotte_Hornets_(2014).webp" 
                 alt="Charlotte Hornets Logo" 
                 className="h-12 w-auto"
               />
+            </div>
+            <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <img 
                   src={user.picture || ''} 
                   alt={user.name || ''} 
                   className="h-8 w-8 rounded-full"
                 />
-                <span className="text-white">{user.name}</span>
-                  <a
-                    href="/api/auth/logout"
-                  className="text-white hover:text-gray-200"
-                  >
-                    Logout
-                  </a>
-                </div>
+                <span className="text-white font-medium">{user.name}</span>
+                <div className="h-4 w-px bg-gray-400 mx-2"></div>
+                <a
+                  href="/api/auth/logout"
+                  className="text-white hover:text-gray-200 font-medium px-3 py-1 rounded hover:bg-[#2a1f6c] transition-colors"
+                >
+                  Logout
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -1104,7 +1107,12 @@ export default function Dashboard() {
             {/* Players Table */}
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
-                <h2 className="text-2xl font-bold text-[#1a105c] mb-6">Players</h2>
+                <div className="flex flex-col space-y-2 mb-6">
+                  <h2 className="text-2xl font-bold text-[#1a105c]">Player Season Averages</h2>
+                  <p className="text-sm text-gray-600">
+                    Statistics shown are per-game averages for the {selectedSeason}-{(selectedSeason + 1).toString().slice(2)} season
+                  </p>
+                </div>
                 
                 {!loadingStates.statsLoaded ? (
                   <LoadingSpinner />
