@@ -336,14 +336,46 @@ export default function Dashboard() {
     }))
     .sort((a, b) => b[sortBy] - a[sortBy]);
 
-  // Prepare data for the radar chart
-  const getRadarData = (player: Player) => {
+  // Add this function to calculate max values and domains
+  const calculateStatDomains = (players: Player[]) => {
+    const domains = {
+      points: Math.ceil(Math.max(...players.map(p => parseFloat(p.average_points || '0')))),
+      rebounds: Math.ceil(Math.max(...players.map(p => parseFloat(p.rebounds || '0')))),
+      assists: Math.ceil(Math.max(...players.map(p => parseFloat(p.assists || '0')))),
+      steals: Math.ceil(Math.max(...players.map(p => parseFloat(p.steals || '0')))),
+      blocks: Math.ceil(Math.max(...players.map(p => parseFloat(p.blocks || '0'))))
+    };
+    return domains;
+  };
+
+  // Update the getRadarData function
+  const getRadarData = (player: Player, domains: Record<string, number>) => {
     return [
-      { subject: 'Points', value: parseFloat(player.average_points || '0') },
-      { subject: 'Rebounds', value: parseFloat(player.rebounds || '0') },
-      { subject: 'Assists', value: parseFloat(player.assists || '0') },
-      { subject: 'Steals', value: parseFloat(player.steals || '0') },
-      { subject: 'Blocks', value: parseFloat(player.blocks || '0') }
+      {
+        subject: `Points (max: ${domains.points})`,
+        value: parseFloat(player.average_points || '0'),
+        fullMark: domains.points
+      },
+      {
+        subject: `Rebounds (max: ${domains.rebounds})`,
+        value: parseFloat(player.rebounds || '0'),
+        fullMark: domains.rebounds
+      },
+      {
+        subject: `Assists (max: ${domains.assists})`,
+        value: parseFloat(player.assists || '0'),
+        fullMark: domains.assists
+      },
+      {
+        subject: `Steals (max: ${domains.steals})`,
+        value: parseFloat(player.steals || '0'),
+        fullMark: domains.steals
+      },
+      {
+        subject: `Blocks (max: ${domains.blocks})`,
+        value: parseFloat(player.blocks || '0'),
+        fullMark: domains.blocks
+      }
     ];
   };
 
@@ -507,6 +539,9 @@ export default function Dashboard() {
       <div className="bg-[#1a105c] h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
     </div>
   );
+
+  // Calculate domains once for all players
+  const statDomains = calculateStatDomains(players);
 
   if (authLoading) {
     return (
@@ -892,15 +927,22 @@ export default function Dashboard() {
                 {selectedPlayer && (
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart
-                        cx="50%"
-                        cy="50%"
-                        outerRadius="80%"
-                        data={getRadarData(selectedPlayer)}
-                      >
+                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={getRadarData(selectedPlayer, statDomains)}>
                         <PolarGrid stroke="#a5a5a5" />
-                        <PolarAngleAxis dataKey="subject" stroke="#1a105c" />
-                        <PolarRadiusAxis angle={30} domain={[0, 30]} stroke="#1a105c" />
+                        <PolarAngleAxis 
+                          dataKey="subject" 
+                          stroke="#1a105c"
+                          tick={{ 
+                            fill: '#1a105c',
+                            fontSize: 12
+                          }}
+                        />
+                        <PolarRadiusAxis
+                          angle={90}
+                          domain={[0, 'auto']}
+                          stroke="#1a105c"
+                          tickCount={6}
+                        />
                         <Radar
                           name={`${selectedPlayer.first_name} ${selectedPlayer.last_name}`}
                           dataKey="value"
@@ -909,8 +951,8 @@ export default function Dashboard() {
                           fillOpacity={0.6}
                         />
                         <Tooltip 
-                          formatter={(value) => [`${value}`, '']}
-                          labelFormatter={(label) => label}
+                          formatter={(value: number) => [value.toFixed(1), '']}
+                          labelFormatter={(label: string) => label.split(' (')[0]}
                         />
                       </RadarChart>
                     </ResponsiveContainer>
