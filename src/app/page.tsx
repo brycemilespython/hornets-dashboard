@@ -927,7 +927,14 @@ export default function Dashboard() {
                 {selectedPlayer && (
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={getRadarData(selectedPlayer, statDomains)}>
+                      <RadarChart 
+                        cx="50%" 
+                        cy="50%" 
+                        outerRadius="80%" 
+                        data={getRadarData(selectedPlayer, statDomains)}
+                        startAngle={90}
+                        endAngle={-270}
+                      >
                         <PolarGrid stroke="#a5a5a5" />
                         <PolarAngleAxis 
                           dataKey="subject" 
@@ -937,11 +944,41 @@ export default function Dashboard() {
                             fontSize: 12
                           }}
                         />
+                        {/* Create individual PolarRadiusAxis components for each stat */}
                         <PolarRadiusAxis
-                          angle={90}
-                          domain={[0, 'auto']}
+                          angle={90}  // Points
+                          domain={[0, statDomains.points]}
+                          axisLine={false}
+                          tick={{ fontSize: 10 }}
                           stroke="#1a105c"
-                          tickCount={6}
+                        />
+                        <PolarRadiusAxis
+                          angle={162}  // Rebounds
+                          domain={[0, statDomains.rebounds]}
+                          axisLine={false}
+                          tick={{ fontSize: 10 }}
+                          stroke="#1a105c"
+                        />
+                        <PolarRadiusAxis
+                          angle={234}  // Assists
+                          domain={[0, statDomains.assists]}
+                          axisLine={false}
+                          tick={{ fontSize: 10 }}
+                          stroke="#1a105c"
+                        />
+                        <PolarRadiusAxis
+                          angle={306}  // Steals
+                          domain={[0, statDomains.steals]}
+                          axisLine={false}
+                          tick={{ fontSize: 10 }}
+                          stroke="#1a105c"
+                        />
+                        <PolarRadiusAxis
+                          angle={18}  // Blocks
+                          domain={[0, statDomains.blocks]}
+                          axisLine={false}
+                          tick={{ fontSize: 10 }}
+                          stroke="#1a105c"
                         />
                         <Radar
                           name={`${selectedPlayer.first_name} ${selectedPlayer.last_name}`}
