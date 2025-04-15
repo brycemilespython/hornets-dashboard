@@ -199,12 +199,12 @@ export default function Dashboard() {
           setLoadingStates(prev => ({ ...prev, teamInfo: false }));
           console.log('Found Hornets team:', hornetsData);
 
-          const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
-            params: {
+        const playersResponse = await axios.get('https://api.balldontlie.io/v1/players', {
+          params: {
               team_ids: [hornetsData.id],
-              per_page: 100
-            },
-            headers: {
+            per_page: 100
+          },
+          headers: {
               'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
             },
             signal
@@ -237,13 +237,13 @@ export default function Dashboard() {
             }
 
             const statsResponse: StatsResponse = await axios.get<StatsResponse>('https://api.balldontlie.io/v1/stats', {
-              params: {
-                player_ids: playerIds,
+          params: {
+            player_ids: playerIds,
                 seasons: [selectedSeason],
                 per_page: 100,
                 cursor: cursor
-              },
-              headers: {
+          },
+          headers: {
                 'Authorization': process.env.NEXT_PUBLIC_BALL_DONT_LIE_API_KEY
               },
               signal
@@ -298,7 +298,7 @@ export default function Dashboard() {
               personal_fouls: (playerStats.reduce((sum, stat) => sum + stat.pf, 0) / totalGames).toFixed(1)
             };
 
-            return {
+          return {
               ...player,
               average_points: averages.points,
               games_played: totalGames,
@@ -312,8 +312,8 @@ export default function Dashboard() {
               blocks: averages.blocks,
               turnovers: averages.turnovers,
               personal_fouls: averages.personal_fouls
-            };
-          });
+          };
+        });
 
           const activePlayers = playersWithStats.filter((player: Player) => 
             typeof player.games_played === 'number' && player.games_played > 0
@@ -707,7 +707,7 @@ export default function Dashboard() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <h1 className="text-white text-xl font-bold">Charlotte Hornets Dashboard</h1>
-            </div>
+              </div>
             <div className="flex items-center justify-center flex-1">
               <img 
                 src="/Charlotte_Hornets_(2014).webp" 
@@ -715,7 +715,7 @@ export default function Dashboard() {
                 className="h-12 w-auto"
               />
             </div>
-            <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <img 
                   src={user.picture || ''} 
@@ -724,13 +724,13 @@ export default function Dashboard() {
                 />
                 <span className="text-white font-medium">{user.name}</span>
                 <div className="h-4 w-px bg-gray-400 mx-2"></div>
-                <a
-                  href="/api/auth/logout"
+                  <a
+                    href="/api/auth/logout"
                   className="text-white hover:text-gray-200 font-medium px-3 py-1 rounded hover:bg-[#2a1f6c] transition-colors"
-                >
-                  Logout
-                </a>
-              </div>
+                  >
+                    Logout
+                  </a>
+                </div>
             </div>
           </div>
         </div>
@@ -1004,7 +1004,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="h-[500px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
+                <BarChart
                         data={pointsData}
                         layout="vertical"
                         margin={{
@@ -1433,7 +1433,7 @@ export default function Dashboard() {
                             <Tooltip 
                               formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
                             />
-                            <Legend />
+                  <Legend />
                             {comparisonData.players.map((player, index) => (
                               <Bar
                                 key={player.name}
@@ -1442,7 +1442,7 @@ export default function Dashboard() {
                                 fillOpacity={0.8}
                               />
                             ))}
-                          </BarChart>
+                </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
@@ -1524,9 +1524,9 @@ export default function Dashboard() {
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                </div>
               </div>
+            </div>
+          </div>
             )}
           </div>
         )}
