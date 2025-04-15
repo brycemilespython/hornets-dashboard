@@ -3,7 +3,6 @@
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import Image from 'next/image';
 
 export default function Login() {
   const { user, isLoading } = useUser();
@@ -27,13 +26,16 @@ export default function Login() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
         <div className="text-center">
-          <div className="relative h-24 w-24 mx-auto mb-6">
-            <Image 
-              src="/Charlotte_Hornets_(2014).webp"
+          <div className="flex justify-center mb-6">
+            <img 
+              src="https://hornets-dashboard-smoky.vercel.app/Charlotte_Hornets_(2014).webp"
               alt="Charlotte Hornets Logo"
-              fill
-              style={{ objectFit: 'contain' }}
-              priority
+              width={96}
+              height={96}
+              style={{
+                maxWidth: '100%',
+                height: 'auto'
+              }}
             />
           </div>
           <h1 className="text-2xl font-bold text-[#1a105c] mb-4">Welcome to Hornets Dashboard</h1>
