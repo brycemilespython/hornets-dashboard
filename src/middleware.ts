@@ -77,7 +77,14 @@ export const config = {
     '/dashboard',
     '/',  // Protect the root/dashboard page
     '/api/players/:path*',  // Protect API routes
-    // Protect everything except public paths and assets
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|verify-email|login|Charlotte_Hornets_\(2014\)\.webp).*)',
+    // Protected paths, excluding public routes and assets
+    '/:path*',
+    '/:path*/?(.*)',
+    '!/_next/:path*',
+    '!/api/auth/:path*',
+    '!/favicon.ico',
+    '!/verify-email',
+    '!/login',
+    '!/Charlotte_Hornets_(2014).webp'
   ],
 }; 
