@@ -5,8 +5,16 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Charlotte Hornets Dashboard',
-  description: 'A secure dashboard showcasing Charlotte Hornets player statistics',
+  title: 'Hornets Dashboard',
+  description: 'Charlotte Hornets Team Statistics Dashboard',
+  icons: {
+    icon: [
+      { url: '/Charlotte_Hornets_(2014).webp', type: 'image/webp' },
+      { url: 'https://www.nba.com/hornets/sites/hornets/files/favicon.ico', type: 'image/x-icon' }
+    ],
+    shortcut: '/Charlotte_Hornets_(2014).webp',
+    apple: '/Charlotte_Hornets_(2014).webp',
+  },
 };
 
 export default function RootLayout({
@@ -16,9 +24,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <UserProvider>{children}</UserProvider>
-      </body>
+      <head>
+        <link 
+          rel="icon" 
+          href="https://www.nba.com/hornets/sites/hornets/files/favicon.ico" 
+          type="image/x-icon"
+        />
+      </head>
+      <UserProvider>
+        <body>{children}</body>
+      </UserProvider>
     </html>
   );
 }
