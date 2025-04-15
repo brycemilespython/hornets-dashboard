@@ -28,7 +28,7 @@ export default function Login() {
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <img 
-              src="https://hornets-dashboard-smoky.vercel.app/Charlotte_Hornets_(2014).webp"
+              src="/Charlotte_Hornets_(2014).webp"
               alt="Charlotte Hornets Logo"
               width={96}
               height={96}
