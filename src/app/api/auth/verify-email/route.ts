@@ -1,90 +1,64 @@
 import { getSession } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET(req: Request) {
+  console.log('Starting email verification check...');
+  
   try {
-    console.log('Verifying email status...');
     const session = await getSession();
-    
     if (!session?.user) {
-      console.log('No session found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.log('No authenticated user found');
+      return NextResponse.json({ error: 'No authenticated user found' }, { status: 401 });
     }
 
-    // Use the session user's sub directly instead of query parameter
-    const userId = session.user.sub;
-    console.log('Using session userId:', userId);
-
-    if (!userId) {
-      console.log('No userId in session');
-      return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
-    }
-
-    // Get the Auth0 Management API token
-    console.log('Getting Management API token...');
-    const tokenResponse = await fetch(`https://${process.env.AUTH0_ISSUER_BASE_URL}/oauth/token`, {
+    console.log('User found, getting management token...');
+    const response = await fetch(`https://${process.env.AUTH0_ISSUER_BASE_URL}/oauth/token`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        client_id: process.env.AUTH0_M2M_CLIENT_ID,
-        client_secret: process.env.AUTH0_M2M_CLIENT_SECRET,
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
         audience: `https://${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/`,
         grant_type: 'client_credentials',
-        scope: 'read:users'
-      }),
+        scope: 'read:users read:user_idp_tokens'
+      })
     });
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('Failed to get management token:', errorText);
-      throw new Error(`Failed to get management API token: ${errorText}`);
+    if (!response.ok) {
+      console.error('Failed to get management token:', await response.text());
+      return NextResponse.json({ error: 'Failed to get management token' }, { status: 500 });
     }
 
-    const { access_token } = await tokenResponse.json();
-    console.log('Got access token');
+    const { access_token } = await response.json();
+    console.log('Got management token, checking user details...');
 
-    // Get user details from Auth0 Management API
-    console.log('Fetching user details...');
     const userResponse = await fetch(
-      `https://${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/users/${encodeURIComponent(userId)}`,
+      `https://${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/users/${session.user.sub}`,
       {
         headers: {
-          'Authorization': `Bearer ${access_token}`,
-          'Content-Type': 'application/json'
-        },
+          Authorization: `Bearer ${access_token}`
+        }
       }
     );
 
     if (!userResponse.ok) {
-      const errorText = await userResponse.text();
-      console.error('Failed to get user details:', errorText);
-      throw new Error(`Failed to get user details: ${errorText}`);
+      console.error('Failed to get user details:', await userResponse.text());
+      return NextResponse.json({ error: 'Failed to get user details' }, { status: 500 });
     }
 
     const userData = await userResponse.json();
-    console.log('User verification status:', userData.email_verified);
-    
-    // If the email is verified, return success
-    if (userData.email_verified) {
-      return NextResponse.json({ 
-        email_verified: true,
-        email: userData.email 
-      });
-    }
+    console.log('Got user details, checking email verification status...');
 
-    // If not verified, check if we should redirect
-    return NextResponse.json({ 
-      email_verified: false,
-      email: userData.email 
+    return NextResponse.json({
+      email_verified: userData.email_verified
+    }, {
+      headers: {
+        'Cache-Control': 'no-store',
+        'Content-Type': 'application/json',
+      }
     });
-
   } catch (error) {
-    console.error('Error checking email verification:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to check email verification status' },
-      { status: 500 }
-    );
+    console.error('Error in verify-email endpoint:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
