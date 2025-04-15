@@ -650,13 +650,13 @@ export default function Dashboard() {
       const value2 = players[1].stats[key].value;
       const better = value1 >= value2 ? 0 : 1;
 
-      return {
+          return {
         stat: label,
         [players[0].name]: value1,
         [players[1].name]: value2,
         better
-      };
-    });
+          };
+        });
   };
 
   const prepareShootingStatsTornadoData = (players: ComparisonData['players']) => {
@@ -708,7 +708,7 @@ export default function Dashboard() {
       setTimeout(() => {
         gameLogRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
-    } catch (error) {
+      } catch (error) {
       console.error('Error fetching game log:', error);
     }
   };
@@ -993,7 +993,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="h-[400px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
+                <BarChart
                         data={shootingData}
                         margin={{
                           top: 20,
@@ -1024,7 +1024,7 @@ export default function Dashboard() {
                           formatter={(value) => [`${value}%`, '']}
                           labelFormatter={(label) => label}
                         />
-                        <Legend />
+                  <Legend />
                         <Bar 
                           dataKey="fg_pct" 
                           name="Field Goal %" 
@@ -1037,12 +1037,12 @@ export default function Dashboard() {
                           fill="#007487" 
                           radius={[4, 4, 0, 0]}
                         />
-                      </BarChart>
+                </BarChart>
                     </ResponsiveContainer>
-                  </div>
-                )}
               </div>
+                )}
             </div>
+          </div>
 
             <div className="bg-white shadow rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
