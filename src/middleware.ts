@@ -74,10 +74,9 @@ export default withMiddlewareAuthRequired(middleware);
 
 export const config = {
   matcher: [
-    // Add routes that require authentication
+    // Only protect specific routes that need authentication
     '/dashboard',
     '/',  // Protect the root/dashboard page
     '/api/players/:path*',  // Protect API routes
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|verify-email|login).*)',
   ],
 }; 
