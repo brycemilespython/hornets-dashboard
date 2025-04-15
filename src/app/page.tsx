@@ -100,6 +100,24 @@ interface ComparisonData {
   comparisons: Record<string, never>; // Empty object type
 }
 
+interface Auth0UserMetadata {
+  email_verified: boolean;
+}
+
+const checkEmailVerification = async (userId: string): Promise<boolean> => {
+  try {
+    const response = await fetch(`/api/auth/verify-email?userId=${userId}`);
+    if (!response.ok) {
+      throw new Error('Failed to check email verification status');
+    }
+    const data = await response.json();
+    return data.email_verified;
+  } catch (error) {
+    console.error('Error checking email verification:', error);
+    return false;
+  }
+};
+
 export default function Dashboard() {
   const { user, error: authError, isLoading: authLoading } = useUser();
   const router = useRouter();
@@ -132,14 +150,40 @@ export default function Dashboard() {
   const [selectedSeason, setSelectedSeason] = useState<number>(2024);
   const availableSeasons = Array.from({ length: 10 }, (_, i) => 2024 - i);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean | null>(null);
+  const [verificationCheckLoading, setVerificationCheckLoading] = useState(true);
+
+  useEffect(() => {
+    const verifyEmail = async () => {
+      if (user) {
+        setVerificationCheckLoading(true);
+        try {
+          const verified = await checkEmailVerification(user.sub);
+          setIsEmailVerified(verified);
+          if (!verified) {
+            router.push('/verify-email');
+          }
+        } catch (error) {
+          console.error('Error verifying email:', error);
+          setIsEmailVerified(false);
+        } finally {
+          setVerificationCheckLoading(false);
+        }
+      }
+    };
+
+    verifyEmail();
+  }, [user, router]);
 
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
         router.push('/login');
+      } else if (isEmailVerified === false) {
+        router.push('/verify-email');
       }
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, router, isEmailVerified]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -669,12 +713,16 @@ export default function Dashboard() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || verificationCheckLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#1a105c]"></div>
       </div>
     );
+  }
+
+  if (!isEmailVerified) {
+    return null;
   }
 
   if (authError) {

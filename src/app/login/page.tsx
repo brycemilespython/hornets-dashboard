@@ -5,31 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Image from 'next/image';
 
-export default function Login() {
+export default function LoginPage() {
   const { user, isLoading } = useUser();
   const router = useRouter();
-
+  
   useEffect(() => {
-    if (!isLoading) {
-      if (user) {
-        if (!user.email_verified) {
-          const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_ISSUER_BASE_URL;
-          const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
-          
-          if (!auth0Domain || !clientId) {
-            console.error('Missing required environment variables');
-            return;
-          }
-          
-          const redirectUri = window.location.origin + '/verify';
-          const verificationUrl = `${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&prompt=verify_email`;
-          window.location.href = verificationUrl;
-        } else {
-          router.push('/dashboard');
-        }
-      }
+    if (user) {
+      router.push('/dashboard');
     }
-  }, [user, isLoading, router]);
+  }, [user, router]);
 
   if (isLoading) {
     return (
