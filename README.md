@@ -1,94 +1,105 @@
 # Charlotte Hornets Dashboard
 
-A secure dashboard showcasing Charlotte Hornets player statistics, built with Next.js, Auth0, and TypeScript.
+A comprehensive dashboard for tracking Charlotte Hornets team and player statistics, built with Next.js and NBA API.
 
 ## Features
 
-- Secure authentication with Auth0
-- Real-time player statistics from the Ball Don't Lie API
-- Interactive data visualizations
-- Responsive design with Tailwind CSS
-- Type-safe development with TypeScript
+- **Team Overview**: View current season standings, team statistics, and performance metrics
+- **Player Statistics**: Track individual player performance with detailed season averages
+- **Game Log**: Access recent game results and upcoming matchups
+- **Season Selection**: Choose from seasons 2015-2024 to view historical data
+- **Secure Authentication**: Email verification required for access
+- **Responsive Design**: Optimized for desktop and mobile viewing
 
-## Tech Stack
+## Authentication Flow
 
-- Next.js 15 (App Router)
-- TypeScript
-- Tailwind CSS
-- Auth0 for authentication
-- Recharts for data visualization
-- Ball Don't Lie API for NBA statistics
+1. **Initial Access**:
+
+   - Users are redirected to the login page
+   - Can sign in with existing account or create new account
+   - Email verification is required for access
+
+2. **Post-Authentication**:
+
+   - Verified users are redirected to the dashboard
+   - Unverified users are redirected to email verification page
+   - Verification email can be resent if needed
+
+3. **Protected Routes**:
+   - Dashboard and API routes require authentication
+   - Static assets and auth-related pages are publicly accessible
+
+## Environment Variables
+
+### Required Variables
+
+```env
+# Auth0 Standard Authentication
+AUTH0_SECRET
+AUTH0_BASE_URL
+AUTH0_ISSUER_BASE_URL
+AUTH0_CLIENT_ID
+AUTH0_CLIENT_SECRET
+
+# Auth0 Management API (for email verification)
+AUTH0_M2M_CLIENT_ID
+AUTH0_M2M_CLIENT_SECRET
+
+# NBA API
+BALLDONTLIE_API_KEY
+```
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js 18.17 or later
-- npm or yarn
-- Auth0 account
-- Ball Don't Lie API key
-
-### Installation
-
 1. Clone the repository:
 
-```bash
-git clone https://github.com/yourusername/hornets-dashboard.git
-cd hornets-dashboard
-```
+   ```bash
+   git clone https://github.com/yourusername/hornets-dashboard.git
+   cd hornets-dashboard
+   ```
 
 2. Install dependencies:
 
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
-3. Create a `.env.local` file in the root directory with the following variables:
+3. Set up environment variables:
 
-```env
-# Auth0 Configuration
-AUTH0_SECRET='your-secret'
-AUTH0_BASE_URL='http://localhost:3000'
-AUTH0_ISSUER_BASE_URL='your-auth0-domain'
-AUTH0_CLIENT_ID='your-client-id'
-AUTH0_CLIENT_SECRET='your-client-secret'
-
-# Ball Don't Lie API
-NEXT_PUBLIC_BALL_DONT_LIE_API_KEY='your-api-key'
-```
+   - Create a `.env.local` file in the root directory
+   - Add all required environment variables
 
 4. Run the development server:
 
-```bash
-npm run dev
+   ````DEVELOPER SERVER IS NOT FUNCTIONAL AS THIS IS HOSTED AT AN ONLINE URL
+   ```bash
+   npm run dev
+   ````
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Development
+
+- **Framework**: Next.js 14 with App Router
+- **Styling**: Tailwind CSS
+- **Authentication**: Auth0
+- **Data Source**: BALLDONTLIEAPI
+- **Deployment**: Vercel
+
+## Project Structure
+
 ```
-
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Deployment
-
-### Vercel Deployment
-
-1. Push your code to GitHub
-2. Import your repository to Vercel
-3. Add the following environment variables in Vercel:
-
-   - `AUTH0_SECRET`
-   - `AUTH0_BASE_URL` (your production URL)
-   - `AUTH0_ISSUER_BASE_URL`
-   - `AUTH0_CLIENT_ID`
-   - `AUTH0_CLIENT_SECRET`
-   - `NEXT_PUBLIC_BALL_DONT_LIE_API_KEY`
-
-4. Deploy!
-
-## Auth0 Configuration
-
-1. Create an Auth0 application
-2. Configure the following in Auth0 dashboard:
-   - Allowed Callback URLs: `https://your-domain/api/auth/callback`
-   - Allowed Logout URLs: `https://your-domain`
-   - Allowed Web Origins: `https://your-domain`
+src/
+├── app/                    # Next.js app directory
+│   ├── api/               # API routes
+│   ├── dashboard/         # Dashboard page
+│   ├── login/            # Login page
+│   ├── verify-email/     # Email verification page
+│   └── layout.tsx        # Root layout
+├── components/            # Reusable components
+├── lib/                  # Utility functions
+└── middleware.ts         # Authentication middleware
+```
 
 ## Contributing
 
@@ -100,4 +111,4 @@ npm run dev
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
