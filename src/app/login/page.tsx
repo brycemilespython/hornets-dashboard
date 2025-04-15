@@ -5,15 +5,27 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Image from 'next/image';
 
-export default function LoginPage() {
+export default function Login() {
   const { user, isLoading } = useUser();
   const router = useRouter();
-  
+
   useEffect(() => {
-    if (user) {
-      router.push('/dashboard');
+    if (!isLoading) {
+      if (user) {
+        if (!user.email_verified) {
+          // Redirect to Auth0's verification page
+          const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_ISSUER_BASE_URL;
+          const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
+          const redirectUri = window.location.origin + '/verify';
+          
+          const verificationUrl = `${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&prompt=verify_email`;
+          window.location.href = verificationUrl;
+        } else {
+          router.push('/dashboard');
+        }
+      }
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (

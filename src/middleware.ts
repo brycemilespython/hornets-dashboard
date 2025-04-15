@@ -13,7 +13,7 @@ export default withMiddlewareAuthRequired({
       const clientId = process.env.AUTH0_CLIENT_ID;
       const redirectUri = process.env.AUTH0_BASE_URL + '/verify';
       
-      const verificationUrl = `${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&prompt=verify_email`;
+      const verificationUrl = `${auth0Domain}/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&prompt=verify_email&screen_hint=signup`;
       
       return NextResponse.redirect(verificationUrl);
     }
@@ -23,5 +23,5 @@ export default withMiddlewareAuthRequired({
 });
 
 export const config = {
-  matcher: ['/dashboard', '/api/players/:path*']
+  matcher: ['/dashboard', '/api/players/:path*', '/']
 }; 
