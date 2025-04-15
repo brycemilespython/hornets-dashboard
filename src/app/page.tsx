@@ -104,7 +104,11 @@ interface Auth0UserMetadata {
   email_verified: boolean;
 }
 
-const checkEmailVerification = async (userId: string): Promise<boolean> => {
+const checkEmailVerification = async (userId: string | undefined | null): Promise<boolean> => {
+  if (!userId) {
+    return false;
+  }
+
   try {
     const response = await fetch(`/api/auth/verify-email?userId=${userId}`);
     if (!response.ok) {
@@ -155,7 +159,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const verifyEmail = async () => {
-      if (user) {
+      if (user?.sub) {
         setVerificationCheckLoading(true);
         try {
           const verified = await checkEmailVerification(user.sub);
@@ -169,6 +173,9 @@ export default function Dashboard() {
         } finally {
           setVerificationCheckLoading(false);
         }
+      } else {
+        setIsEmailVerified(false);
+        setVerificationCheckLoading(false);
       }
     };
 

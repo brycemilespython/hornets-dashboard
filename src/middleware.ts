@@ -6,9 +6,9 @@ async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const session = await getSession(req, res);
 
-  // If no session, the withMiddlewareAuthRequired will handle the redirect to login
-  if (!session?.user) {
-    return res;
+  // If no session or no user.sub, redirect to login
+  if (!session?.user?.sub) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   // Don't check verification status for these paths
@@ -65,8 +65,8 @@ async function middleware(req: NextRequest) {
     return res;
   } catch (error) {
     console.error('Error in middleware:', error);
-    // On error, allow the request to continue to avoid blocking users
-    return res;
+    // On error, redirect to login to ensure security
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 }
 
@@ -78,6 +78,6 @@ export const config = {
     '/dashboard',
     '/',  // Protect the root/dashboard page
     '/api/players/:path*',  // Protect API routes
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|verify-email).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|verify-email|login).*)',
   ],
 }; 
