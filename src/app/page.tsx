@@ -155,7 +155,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const verifyEmail = async () => {
-      if (user?.sub) {
+      if (user) {
         setVerificationCheckLoading(true);
         try {
           const verified = await checkEmailVerification(user.sub);
@@ -169,9 +169,6 @@ export default function Dashboard() {
         } finally {
           setVerificationCheckLoading(false);
         }
-      } else {
-        setIsEmailVerified(false);
-        setVerificationCheckLoading(false);
       }
     };
 
