@@ -11,13 +11,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    console.log('Checking userId:', userId);
+    // Use the session user's sub directly instead of query parameter
+    const userId = session.user.sub;
+    console.log('Using session userId:', userId);
 
     if (!userId) {
-      console.log('No userId provided');
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      console.log('No userId in session');
+      return NextResponse.json({ error: 'User ID not found in session' }, { status: 400 });
     }
 
     // Get the Auth0 Management API token
@@ -32,13 +32,14 @@ export async function GET(request: Request) {
         client_secret: process.env.AUTH0_M2M_CLIENT_SECRET,
         audience: `https://${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/`,
         grant_type: 'client_credentials',
+        scope: 'read:users'
       }),
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('Failed to get management token:', errorText);
-      throw new Error('Failed to get management API token');
+      throw new Error(`Failed to get management API token: ${errorText}`);
     }
 
     const { access_token } = await tokenResponse.json();
@@ -50,7 +51,8 @@ export async function GET(request: Request) {
       `https://${process.env.AUTH0_ISSUER_BASE_URL}/api/v2/users/${encodeURIComponent(userId)}`,
       {
         headers: {
-          Authorization: `Bearer ${access_token}`,
+          'Authorization': `Bearer ${access_token}`,
+          'Content-Type': 'application/json'
         },
       }
     );
@@ -58,20 +60,30 @@ export async function GET(request: Request) {
     if (!userResponse.ok) {
       const errorText = await userResponse.text();
       console.error('Failed to get user details:', errorText);
-      throw new Error('Failed to get user details');
+      throw new Error(`Failed to get user details: ${errorText}`);
     }
 
     const userData = await userResponse.json();
     console.log('User verification status:', userData.email_verified);
     
+    // If the email is verified, return success
+    if (userData.email_verified) {
+      return NextResponse.json({ 
+        email_verified: true,
+        email: userData.email 
+      });
+    }
+
+    // If not verified, check if we should redirect
     return NextResponse.json({ 
-      email_verified: userData.email_verified,
+      email_verified: false,
       email: userData.email 
     });
+
   } catch (error) {
     console.error('Error checking email verification:', error);
     return NextResponse.json(
-      { error: 'Failed to check email verification status' },
+      { error: error instanceof Error ? error.message : 'Failed to check email verification status' },
       { status: 500 }
     );
   }

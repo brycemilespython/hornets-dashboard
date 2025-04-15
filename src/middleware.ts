@@ -7,6 +7,8 @@ export default withMiddlewareAuthRequired({
 export const config = {
   matcher: [
     '/dashboard',
-    '/api/players/:path*'
+    '/api/players/:path*',
+    '/api/auth/verify-email',
+    '/api/auth/resend-verification'
   ]
 }; 

@@ -13,42 +13,41 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     const checkVerification = async () => {
-      console.log('Checking verification status for user:', user);
-      
       if (!user) {
         console.log('No user found, redirecting to login');
         router.push('/login');
         return;
       }
 
-      if (user?.sub) {
-        try {
-          console.log('Fetching verification status...');
-          const response = await fetch(`/api/auth/verify-email?userId=${encodeURIComponent(user.sub)}`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Verification status:', data);
-            setIsVerified(data.email_verified);
-            if (data.email_verified) {
-              console.log('Email verified, redirecting to dashboard');
-              router.push('/');
-            }
-          } else {
-            console.error('Failed to fetch verification status:', await response.text());
-          }
-        } catch (error) {
-          console.error('Error checking verification status:', error);
-        } finally {
-          setCheckingStatus(false);
+      try {
+        console.log('Fetching verification status...');
+        const response = await fetch('/api/auth/verify-email');
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Failed to fetch verification status:', errorText);
+          return;
         }
-      } else {
-        console.log('No user ID found');
+
+        const data = await response.json();
+        console.log('Verification status:', data);
+        
+        setIsVerified(data.email_verified);
+        if (data.email_verified) {
+          console.log('Email verified, redirecting to dashboard');
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('Error checking verification status:', error);
+      } finally {
         setCheckingStatus(false);
       }
     };
 
-    checkVerification();
-  }, [user, router]);
+    if (!isLoading) {
+      checkVerification();
+    }
+  }, [user, router, isLoading]);
 
   if (isLoading || checkingStatus) {
     return (
