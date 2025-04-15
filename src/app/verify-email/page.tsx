@@ -13,7 +13,7 @@ export default function VerifyEmail() {
 
   useEffect(() => {
     const checkVerification = async () => {
-      if (user?.sub) {
+      if (user) {
         try {
           const response = await fetch(`/api/auth/verify-email?userId=${user.sub}`);
           if (response.ok) {
@@ -28,8 +28,6 @@ export default function VerifyEmail() {
         } finally {
           setCheckingStatus(false);
         }
-      } else {
-        setCheckingStatus(false);
       }
     };
 
